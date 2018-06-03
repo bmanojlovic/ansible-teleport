@@ -1,0 +1,15 @@
+[Unit]
+Description=Teleport SSH Service
+After=network.target
+Documentation=https://gravitational.com/teleport/
+
+[Service]
+Type=simple
+Restart=on-failure
+EnvironmentFile=-{{ teleport_sysconfig }}
+ExecStart={{ teleport_bin_path }}/teleport start --config={{ teleport_cfg_path }}/teleport.yaml --pid-file={{ teleport_pid_path }}
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile={{ teleport_pid_path }}
+
+[Install]
+WantedBy=multi-user.target

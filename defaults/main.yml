@@ -1,0 +1,23 @@
+---
+# defaults file for teleport-install
+teleport_version: 2.6.1
+teleport_arch:
+  x86_64: amd64
+  i386: amd64 # this is broken ... but hey don't blame me if you still use 32bit os :)
+  armv7l: arm
+  aarch64: arm
+teleport_svc_name: teleport
+teleport_bin_path: /usr/local/bin
+teleport_cfg_path: /etc/teleport/
+teleport_crt_path: /etc/teleport/cert
+teleport_key_path: /etc/teleport/privkey
+teleport_pid_path: /run/teleport.pid
+teleport_sysconfig: "/etc/{{ (ansible_os_family|lower == 'debian')|ternary('default', 'sysconfig') }}/{{ teleport_svc_name }}"
+teleport_archive_url: "https://get.gravitational.com/teleport-v{{ teleport_version }}-{{ ansible_system |lower }}-{{ teleport_arch[ansible_architecture] }}-bin.tar.gz"
+teleport_service:
+  systemd:
+    destination_file: "/etc/systemd/system/{{ teleport_svc_name }}.service"
+    template_file: "teleport_service.j2"
+  sysvinit:
+    destination_file:  "/etc/init.d/{{ teleport_svc_name }}"
+    template_file: "teleport_init.j2"

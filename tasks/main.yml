@@ -1,0 +1,53 @@
+---
+# tasks file for ansible-teleport
+
+- name: Get version of currently installed teleport
+  command: "{{ teleport_bin_path }}/teleport version"
+  failed_when: False
+  changed_when: False
+  register: running_version
+
+- name: Fetch newer version of teleport
+  get_url:
+      dest: "/tmp/teleport-{{ teleport_version }}.tar.gz"
+      url: "{{ teleport_archive_url }}"
+  when:
+    - running_version.rc != 0
+    - running_version.stdout is not defined or ( ['v', teleport_version]|join not in running_version.stdout)
+
+- name: Create installation directory
+  file:
+      state: directory
+      dest: "/tmp/teleport_installation-{{ teleport_version }}"
+  when:
+    - running_version.rc != 0
+    - running_version.stdout is not defined or ( ['v', teleport_version]|join not in running_version.stdout)
+
+- name: Unpack binary distribution
+  unarchive:
+    dest: "/tmp/teleport_installation-{{ teleport_version }}"
+    src: "/tmp/teleport-{{ teleport_version }}.tar.gz"
+    creates: "/tmp/teleport_installation-{{ teleport_version }}/teleport/install"
+    remote_src: yes
+  when:
+    - running_version.rc != 0
+    - running_version.stdout is not defined or ( ['v', teleport_version]|join not in running_version.stdout)
+
+- name: Run installation script
+  command: "./install"
+  args:
+#    creates: "{{ teleport_bin_path }}/teleport"  # force installation in case of upgrade...
+    chdir: "/tmp/teleport_installation-{{ teleport_version }}/teleport"
+  when:
+    - running_version.stdout is not defined or ( ['v', teleport_version]|join not in running_version.stdout)
+
+- name: Install Service startup file
+  template:
+    dest: "{{ teleport_service[ansible_service_mgr].destination_file }}"
+    src: "{{ teleport_service[ansible_service_mgr].template_file }}"
+
+- name: Install sysconfig file
+  template:
+    dest: "{{ teleport_sysconfig }}"
+    src: teleport_sysconfig.j2
+

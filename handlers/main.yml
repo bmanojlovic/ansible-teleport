@@ -1,0 +1,11 @@
+---
+# handlers file for teleport-install
+
+- name: reload systemd
+  command: systemctl daemon-reload
+
+- name: restart teleport
+  service:
+    name: teleport
+    state: restarted
+
