@@ -23,6 +23,11 @@
     - running_version.rc != 0
     - running_version.stdout is not defined or ( ['v', teleport_version]|join not in running_version.stdout)
 
+- name: Create configuration directory
+  file:
+      state: directory
+      dest: "/etc/teleport"
+
 - name: Unpack binary distribution
   unarchive:
     dest: "/tmp/teleport_installation-{{ teleport_version }}"
@@ -51,3 +56,21 @@
     dest: "{{ teleport_sysconfig }}"
     src: teleport_sysconfig.j2
 
+- name: Check if configuration is provided or we will create new configuration
+  stat:
+    path: "{{ teleport_cfg_path }}/teleport.yaml"
+  register: tele_cfg
+
+- name: Create initial configuration if not provided in play
+  command: /usr/local/bin/teleport configure
+  args:
+    creates: /etc/teleport/teleport.yaml  # cake is a lie but next step will really create it but SHHHHH
+  when: tele_cfg.stat.exists is defined and tele_cfg.stat.exists == false
+  register: cfg
+
+- name: write example configuration if it did not exist
+  copy:
+      dest: /etc/teleport/teleport.yaml
+      content: "{{ cfg.stdout }}"
+  when:
+    - tele_cfg.stat.exists is defined and tele_cfg.stat.exists == false
